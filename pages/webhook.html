@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <link rel="icon" href="./public/favicon.ico">
+    <title>🐗</title>
+    <style>
+        body {
+            margin: 0;
+            width: 100vw;
+            height: 100vh;
+            display: grid;
+            grid-template-areas:
+                "a a"
+                "b c";
+            grid-template-rows: min-content 1fr;
+            grid-template-columns: 200px;
+        }
+        body,
+        code {
+            font-size: 15px;
+        }
+        #webhook {
+            grid-area: a;
+            padding: 10px;
+        }
+        #request-list {
+            grid-area: b;
+            overflow-y: auto;
+        }
+        #request-details {
+            grid-area: c;
+            overflow-y: auto;
+            padding: 10px;
+        }
+        #request-details > div > h3:first-child {
+            margin-top: 0;
+        }
+        .request-preview {
+            padding: 10px;
+            cursor: pointer;
+        }
+        .request-preview:hover {
+            background-color: lightgray;
+        }
+        .request-preview.selected {
+            background-color: lightslategray;
+        }
+        .method {
+            display: inline-block;
+            padding: 5px 10px;
+            background-color: gray;
+            color: white;
+            font-weight: 600;
+        }
+        .method-delete {
+            background-color: red;
+        }
+        .method-get {
+            background-color: blue;
+        }
+        .method-post {
+            background-color: green;
+        }
+        .method-put {
+            background-color: purple;
+        }
+    </style>
+  </head>
+  <body>
+    <div id="webhook">
+        <code id="webhook-link"></code>
+    </div>
+    <div id="request-list"></div>
+    <div id="request-details"></div>
+    <script>
+        let REQUESTS = [];
+        let REQUEST = null;
+        const REQUESTS_OPENED = new Set();
+        const PAGE_OPENED_TIME = new Date();
+
+        const [, path_prefix, uuid] = window.location.pathname.match(/^(.*)\/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$/);
+        document.title = `🐗 ${uuid}`;
+
+        const web_socket_url = new URL(window.location);
+        web_socket_url.protocol = window.location.protocol === 'https' ? 'wss' : 'ws';
+        web_socket_url.pathname = `${path_prefix}/ws/${uuid}`;
+
+        const webhook_url = new URL(window.location);
+        webhook_url.pathname = `${path_prefix}/webhook/${uuid}`;
+        document.getElementById('webhook-link').innerText = webhook_url;
+
+        function e(value) {
+            return String(value).replace(/[<>&"']/g, char => ({
+                '<': '&lt;',
+                '>': '&gt;',
+                '&': '&amp;',
+                '"': '&quot;',
+                '\'': '&#39;',
+            }[char]));
+        }
+
+        function handleRequestClick(event) {
+            const request = REQUESTS.find(r => r.id === event.currentTarget.dataset.id);
+
+            if (request === undefined) {
+                REQUEST = null;
+                document.getElementById('request-details').innerHTML = '';
+            } else {
+                REQUEST = request;
+                REQUESTS_OPENED.add(request.id);
+                document.getElementById('request-list').innerHTML = REQUESTS.map(renderRequestPreview).join('');
+                document.getElementById('request-details').innerHTML = renderRequestDetails(request);
+            }
+        }
+
+        function renderRequestPreview(request) {
+            const is_selected = REQUEST && REQUEST.id === request.id;
+            const is_new = new Date(request.received_time) > PAGE_OPENED_TIME && !REQUESTS_OPENED.has(request.id);
+
+            return `
+                <div data-id="${e(request.id)}" class="request-preview ${e(is_selected ? 'selected': '')}" onclick="handleRequestClick(event)">
+                    <div>
+                        <div class="method method-${e(request.method.toLowerCase())}">${e(request.method)}</div>
+                        ${is_new
+                            ? `<span>NEW!</span>`
+                            : ''
+                        }
+                    </div>
+                    <br/>
+                    <div>
+                        <div class="received-time">${e(new Date(request.received_time).toLocaleTimeString())}</div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderRequestDetails(request) {
+            let body = request.body;
+            const is_json = request.headers.find(([key, value]) => key.toLowerCase() === 'content-type' && value.toLowerCase() === 'application/json') !== undefined;
+            if (is_json) {
+                try {
+                    body = JSON.stringify(JSON.parse(body), null, 2);
+                } catch (e) {}
+            }
+            return `
+                <div>
+                    <h3>URI</h3>
+                    <div>
+                        <code>${e(path_prefix + request.uri)}</code>
+                    </div>
+                    <h3>Headers</h3>
+                    <table>
+                    ${request.headers.map(([key, value]) => `
+                        <tr>
+                            <td>
+                                <code>${e(key)}</code>
+                            </td>
+                            <td>
+                                <code>${e(value)}</code>
+                            </td>
+                        </tr>
+                    `).join('')}
+                    </table>
+                    <h3>Body</h3>
+                    <pre><code>${e(body)}</code></pre>
+                </div>
+            `;
+        }
+
+        function start_web_socket() {
+            const ws = new WebSocket(web_socket_url);
+            ws.onmessage = (event) => {
+                console.log('Request received');
+                let request = JSON.parse(event.data);
+                REQUESTS = [request, ...REQUESTS.slice(0, 999)];
+                document.getElementById('request-list').innerHTML = REQUESTS.map(renderRequestPreview).join('');
+            };
+            ws.onclose = (event) => {
+                console.error('Web socket closed');
+                window.setTimeout(start_web_socket, 1000);
+            };
+            ws.onopen = (event) => {
+                console.log('Web socket open');
+                REQUESTS = [];
+                document.getElementById('request-list').innerHTML = '';
+            };
+        }
+
+        start_web_socket();
+    </script>
+  </body>
+</html>

@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <link rel="icon" href="public/favicon.ico">
+    <title>🐗 Webhook tester</title>
+    <style>
+        body {
+            margin: 0;
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        body,
+        code {
+            font-size: 15px;
+        }
+        main {
+            text-align: center;
+        }
+        #webhook-url {
+            font-size: 15px;
+        }
+        #webhook-page-link {
+            display: inline-block;
+            padding: 10px 20px;
+            background-color: blue;
+            color: white;
+            text-decoration: none;
+            font-weight: 600;
+        }
+    </style>
+  </head>
+  <body>
+    <main>
+        <h1>Your new webhook URL</h1>
+        <div><code id="webhook-url"></code></div>
+        <br/>
+        <a id="webhook-page-link" href="#">Watch requests</a>
+    </main>
+    <script>
+        function addSlash(s) {
+            return s.endsWith('/') ? s : s + '/';
+        }
+        const uuid = crypto.randomUUID();
+
+        const webhook_url = new URL(window.location);
+        webhook_url.pathname = addSlash(window.location.pathname) + 'webhook/' + uuid;
+
+        const webhook_page_url = new URL(window.location);
+        webhook_page_url.pathname = addSlash(window.location.pathname) + uuid;
+
+        document.getElementById('webhook-url').innerText = webhook_url;
+        document.getElementById('webhook-page-link').href = webhook_page_url;
+    </script>
+  </body>
+</html>
