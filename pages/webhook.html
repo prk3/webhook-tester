@@ -85,7 +85,7 @@
         document.title = `🐗 ${uuid}`;
 
         const web_socket_url = new URL(window.location);
-        web_socket_url.protocol = window.location.protocol === 'https' ? 'wss' : 'ws';
+        web_socket_url.protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
         web_socket_url.pathname = `${path_prefix}/ws/${uuid}`;
 
         const webhook_url = new URL(window.location);
