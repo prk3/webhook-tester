@@ -13,7 +13,7 @@ type SharedRequestRepository = Arc<BlockingMutex<RequestRepository>>;
 const WEB_SOCKET_PING_INTERVAL_SECONDS: u64 = 30;
 const WEB_SOCKET_PONG_TIMEOUT_SECONDS: u64 = 10;
 const REQUEST_REPOSITORY_CLEANUP_INTERVAL_SECONDS: u64 = 60;
-const HTTP_SERVER_SOCKET_ADDRESS: &str = "0.0.0.0:3005";
+const HTTP_SERVER_SOCKET_ADDRESS: &str = "0.0.0.0:8000";
 
 fn main() {
     let runtime = tokio::runtime::Builder::new_current_thread()

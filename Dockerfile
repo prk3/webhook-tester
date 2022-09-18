@@ -14,5 +14,5 @@ RUN cargo build --release
 
 FROM scratch
 
-COPY --from=build /home/rust/src/target/x86_64-unknown-linux-musl/release/webhook-tester /webhook-tester
+COPY --from=build --chown=0:0 /home/rust/src/target/x86_64-unknown-linux-musl/release/webhook-tester /webhook-tester
 CMD ["/webhook-tester"]
