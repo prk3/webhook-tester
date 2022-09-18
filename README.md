@@ -19,10 +19,10 @@ docker build --tag webhook-tester:latest .
 Run the docker image.
 
 ```bash
-docker run -p 3005:3005 webhook-tester:latest
+docker run -p 8000:8000 webhook-tester:latest
 ```
 
-Open http://localhost:3005 to find URL and inspect requests.
+Open http://localhost:8000 to find URL and inspect requests.
 
 ## License
 
